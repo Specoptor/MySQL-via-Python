@@ -1,0 +1,68 @@
+SELECT topic.id, description, IFNULL(count,0) as blurted_Count
+FROM topic LEFT JOIN
+	(SELECT topicid, COUNT(*) AS count FROM blurt_analysis GROUP BY topicid) as tpc
+ON id=topicid; 
+
+#2
+SELECT user.name, COUNT(follow.follower) as Follower_Count
+FROM follow, celebrity, user
+WHERE follow.followee=user.email AND follow.followee = celebrity.email
+GROUP BY follow.followee;
+
+#3
+SELECT user.name, COUNT(blurt.blurtid) as blurted_Count
+FROM celebrity, user, blurt
+WHERE celebrity.email=user.email AND celebrity.email= blurt.email
+GROUP BY celebrity.email
+ORDER BY count(blurt.blurtid) DESC;
+
+#4
+SELECT user.name
+FROM celebrity, user
+WHERE celebrity.email=user.email AND celebrity.email NOT IN 
+							  (SELECT follower FROM follow);	
+                              
+#5
+
+SELECT vendor.name, user.email, count(follow.follower) as follower_Count
+FROM vendor_ambassador, user, follow, vendor
+WHERE vendor_ambassador.email=user.email
+AND follow.followee= vendor_ambassador.email
+AND vendor.id=vendor_ambassador.vendorid
+GROUP BY vendor_ambassador.email;
+
+# 6
+select ven.name, COUNT(distinct ba.email) as userCount
+from vendor ven, vendor_topics t, blurt_analysis ba
+where ven.id = t.vendorid and t.topicid= ba.topicid 
+AND ba.email NOT in
+(select ua.email
+ from user_ad ua, advertisement adv
+ where adv.vendorid = ven.id AND adv.id=ua.adid)
+group by ven.name
+order by userCount desc;
+
+#7
+
+SELECT uA.name as user_A, uB.name as user_B
+FROM USER AS uA, USER AS uB,
+ (SELECT DISTINCT ba.email AS aemail, bb.email AS bemail
+ FROM blurt_analysis AS ba, blurt_analysis AS bb
+ WHERE ba.topicid = bb.topicid AND ba.email != bb.email AND ba.email NOT IN
+ (SELECT follower FROM follow WHERE followee=bb.email)) AS temp
+WHERE uA.email = aemail AND uB.email=bemail;
+
+#8
+SELECT DISTINCT b.follower as A, b.followee as B, a.followee as C
+FROM follow a, follow b
+WHERE b.followee = a.follower AND a.followee NOT IN
+ (SELECT followee 
+	FROM follow 
+	WHERE follower = b.follower);
+
+# 9
+SELECT T.id AS topicID, T.description topicName, B.location state, COUNT(*) blurtCount, AVG(BA.sentiment) averageSentiment
+FROM topic T, blurt_analysis BA, blurt B
+WHERE T.id = BA.topicid AND BA.email = B.email AND BA.blurtid = B.blurtid
+GROUP BY topicID, T.description, B.location
+HAVING AVG(BA.sentiment) < 0;
